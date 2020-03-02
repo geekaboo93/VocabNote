@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vocab Note</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- import JavaScript -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+<div id="app">
+    <el-container>
+        <el-header></el-header>
+        <el-main>
+            <el-row>
+                <el-col :span="20" :offset="2">
+                    <div class="vocabs" v-if="vocab.length > 0">
+                        <el-card class="box-card" v-for="(el, key) in vocab">
+                            <div slot="header" class="clearfix">
+                                <span>{{el.vocab}}</span>
+                                <el-button style="float: right; padding: 3px 0" type="text" @click="editVocab(key)">
+                                    Edit
+                                </el-button>
+                            </div>
+                            <div class="text item">
+                                {{el.meaning}}
+                            </div>
+                        </el-card>
+                    </div>
+
+
+                    <el-form :model="newVocab" :rules="rules" ref="newVocab">
+                        <el-form-item label="Vocab" prop="vocab">
+                            <el-input placeholder="schadenfreude" v-model="newVocab.vocab" clearable></el-input>
+                        </el-form-item>
+                        <el-form-item label="Meaning" prop="meaning">
+                            <el-input type="textarea" autosize placeholder="pleasure derived by someone from another person's misfortune.
+" v-model="newVocab.meaning"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="addNewVocab('newVocab')">Save</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-col>
+            </el-row>
+        </el-main>
+        <el-footer></el-footer>
+    </el-container>
+</div>
+</html>
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data() {
+            return {
+                vocab: localStorage.vocab ? JSON.parse(localStorage.vocab) : [],
+                newVocab: {
+                    vocab: '',
+                    meaning: '',
+                    target: null
+                },
+                rules: {
+                    vocab: [
+                        {required: true, message: 'Don\'t forget about to key in your soon be memorized vocab!'}
+                    ],
+                    meaning: [
+                        {required: true, message: 'What is the meaning ?'}
+                    ]
+                }
+            }
+        },
+        methods: {
+            addNewVocab(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        let existingVocab = localStorage.getItem('vocab');
+                        let tempVocabObj = [];
+                        let targetElement = this.newVocab.target;
+                        if (existingVocab && existingVocab.length > 0) {
+                            tempVocabObj = JSON.parse(existingVocab);
+                        }
+                        if (targetElement) {
+                            let oldVocab = this.vocab[targetElement];
+                            if (oldVocab.vocab === this.newVocab.vocab && oldVocab.meaning === this.newVocab.meaning) {
+                                alert('Mate, you didn\'t not change anything');
+                            } else {
+                                let vocabs = JSON.parse(localStorage.getItem('vocab'));
+                                vocabs[targetElement] = this.newVocab;
+                                this.updateVocabObj(vocabs);
+                                return true;
+                            }
+                        } else {
+                            this.$delete(this.newVocab, 'isEdit');
+                            tempVocabObj.push(this.newVocab);
+                            this.updateVocabObj(tempVocabObj);
+                            return true;
+                        }
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            editVocab(key) {
+                let targetVocab = this.vocab[key];
+                this.newVocab.vocab = targetVocab.vocab;
+                this.newVocab.meaning = targetVocab.meaning;
+                this.newVocab.target = key;
+            },
+            updateVocabObj(tempVocab) {
+                localStorage.setItem('vocab', JSON.stringify(tempVocab));
+                this.vocab = JSON.parse(localStorage.vocab);
+                this.newVocab.vocab = '';
+                this.newVocab.meaning = '';
+            }
+        },
+        mounted: function () {
+        }
+    })
+</script>
+<style>
+    .vocabs .box-card {
+        margin-bottom: 1rem;
+    }
+</style>
