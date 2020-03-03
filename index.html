@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Vocab Note</title>
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <!-- import CSS -->
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    <!-- import JavaScript -->
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-</head>
+<body>
 <div id="app">
     <el-container>
         <el-header></el-header>
@@ -15,21 +13,40 @@
             <el-row>
                 <el-col :span="20" :offset="2">
                     <div class="vocabs" v-if="vocab.length > 0">
-                        <el-card class="box-card" v-for="(el, key) in vocab">
+                        <el-card :class="'box-card vocab-row-' + key" v-for="(el, key) in vocab">
                             <div slot="header" class="clearfix">
                                 <span>{{el.vocab}}</span>
-                                <el-button style="float: right; padding: 3px 0" type="text" @click="editVocab(key)">
-                                    Edit
-                                </el-button>
+                                <el-button-group style="float:right">
+                                    <el-button type="primary" icon="el-icon-edit"
+                                               @click="editVocab(key)"></el-button>
+                                    <el-popover
+                                            placement="top"
+                                            width="160"
+                                            trigger="click" v-model="el.visible">
+                                        <p>Are you sure to delete this?</p>
+                                        <div style="text-align: right; margin: 0">
+                                            <el-button size="mini" type="text" @click="el.visible = false">Cancel
+                                            </el-button>
+                                            <el-button type="primary" size="mini" @click="deleteVocab(key)">Confirm
+                                            </el-button>
+                                        </div>
+                                        <el-button type="primary" icon="el-icon-delete" slot="reference"></el-button>
+                                    </el-popover>
+                                </el-button-group>
                             </div>
                             <div class="text item">
                                 {{el.meaning}}
                             </div>
                         </el-card>
                     </div>
-
-
-                    <el-form :model="newVocab" :rules="rules" ref="newVocab">
+                    <el-pagination
+                            @size-change="handleSizeChange"
+                            @current-change="handleCurrentChange"
+                            :page-size="3"
+                            layout="total, sizes, prev, pager, next, jumper"
+                            :total="vocab.length">
+                    </el-pagination>
+                    <el-form id="vocabForm" :model="newVocab" :rules="rules" ref="newVocab">
                         <el-form-item label="Vocab" prop="vocab">
                             <el-input placeholder="schadenfreude" v-model="newVocab.vocab" clearable></el-input>
                         </el-form-item>
@@ -47,13 +64,28 @@
         <el-footer></el-footer>
     </el-container>
 </div>
+</body>
+<!-- import Vue before Element -->
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<!-- import JavaScript -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui/lib/umd/locale/en.js"></script>
+<script src="https://unpkg.com/element-ui/lib/umd/locale/zh-CN.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-scrollto"></script>
 </html>
-<script type="text/javascript">
+<script>
+    ELEMENT.locale(ELEMENT.lang.zhCN);
     var app = new Vue({
         el: '#app',
         data() {
+            let vocabObj = localStorage.vocab ? JSON.parse(localStorage.vocab) : [];
+            if (vocabObj.length > 0) {
+                for (var el in vocabObj) {
+                    vocabObj[el].visible = false;
+                }
+            }
             return {
-                vocab: localStorage.vocab ? JSON.parse(localStorage.vocab) : [],
+                vocab: vocabObj,
                 newVocab: {
                     vocab: '',
                     meaning: '',
@@ -66,7 +98,8 @@
                     meaning: [
                         {required: true, message: 'What is the meaning ?'}
                     ]
-                }
+                },
+                visible: false
             }
         },
         methods: {
@@ -84,9 +117,9 @@
                             if (oldVocab.vocab === this.newVocab.vocab && oldVocab.meaning === this.newVocab.meaning) {
                                 alert('Mate, you didn\'t not change anything');
                             } else {
-                                let vocabs = JSON.parse(localStorage.getItem('vocab'));
-                                vocabs[targetElement] = this.newVocab;
-                                this.updateVocabObj(vocabs);
+                                let tempVocabs = JSON.parse(localStorage.getItem('vocab'));
+                                tempVocabs[targetElement] = this.newVocab;
+                                this.updateVocabObj(tempVocabs);
                                 return true;
                             }
                         } else {
@@ -105,20 +138,41 @@
                 this.newVocab.vocab = targetVocab.vocab;
                 this.newVocab.meaning = targetVocab.meaning;
                 this.newVocab.target = key;
+                this.$scrollTo('#vocabForm', 1000)
+            },
+            deleteVocab(key) {
+                var tempVocab = this.vocab;
+                this.$delete(tempVocab, key);
+                this.updateVocabObj(tempVocab);
             },
             updateVocabObj(tempVocab) {
                 localStorage.setItem('vocab', JSON.stringify(tempVocab));
                 this.vocab = JSON.parse(localStorage.vocab);
                 this.newVocab.vocab = '';
                 this.newVocab.meaning = '';
+            },
+            handleSizeChange(val) {
+                console.log(val);
+            },
+            handleCurrentChange(val) {
+                console.log(val);
             }
         },
         mounted: function () {
         }
     })
+
 </script>
 <style>
+    html body {
+        font-family: "Helvetica Neue";
+    }
+
     .vocabs .box-card {
         margin-bottom: 1rem;
+    }
+
+    .el-button-group .el-button {
+        padding: 6px 10px;
     }
 </style>
